@@ -28,7 +28,7 @@ import com.mysql.jdbc.PreparedStatement;
 
 //success result example;
 //{
-//    "tag": "register",
+//    "tag": "register",dd
 //    "error": false,
 //    "uid": "54f2c651c42e18.10964974",
 //    "user": {
