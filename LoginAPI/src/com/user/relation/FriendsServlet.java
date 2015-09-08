@@ -17,24 +17,10 @@ import org.json.simple.JSONObject;
 @SuppressWarnings("serial")
 public class FriendsServlet extends HttpServlet {
 
-	// int v, requested pages.
-	
-	private int v = 0;
-	
-	//JSONObject Instance to record the outputs
-	private JSONObject obj;
-	
-	//servlet request with parameters(post)
-	private HttpServletRequest req;
-	
-	//db connection using jconnector driver
-	private Connection conn;
-	
 	private static final String GOOGLE_J_DRIVER = "jdbc:google:mysql://login-1044:mysql-userdata/android_api?user=root";
 
 	public void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws IOException {
-		v++;
 		
 		resp.setContentType("text/plain");
 		resp.getWriter().println("Hello, world");
@@ -49,12 +35,11 @@ public class FriendsServlet extends HttpServlet {
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
 		
-		v++;
 		PrintWriter out = resp.getWriter();
 
-		obj = new JSONObject();
+		JSONObject obj = new JSONObject();
+		Connection conn = null;
 		String url;
-		this.req = req;
 
 		// Setting up materials to connect the mysql db from Google app engine
 		// Must enable google-connector-j set true beforehand
@@ -82,19 +67,19 @@ public class FriendsServlet extends HttpServlet {
 		String tag = req.getParameter("tag");
 
 		try {
-			int uid1 = getUID();
+			int uid1 = getUID(conn,obj,req);
 			
 			switch (tag) {
 			case "parse":
-				parseFriends(uid1);
+				parseFriends(conn,obj,uid1);
 				break;
 			case "add":
-				int uidToAdd = getFriendUID();
-				addFriendRelationToDB(uid1, uidToAdd);
+				int uidToAdd = getFriendUID(conn,obj,req);
+				addFriendRelationToDB(conn,obj,uid1, uidToAdd);
 				break;
 			case "remove":
-				int uidToRemove = getFriendUID();
-				removeFriendRelationFromDB(uid1, uidToRemove);
+				int uidToRemove = getFriendUID(conn,obj,req);
+				removeFriendRelationFromDB(conn,obj,uid1, uidToRemove);
 				break;
 			default:
 				obj.put("error", true);
@@ -115,7 +100,7 @@ public class FriendsServlet extends HttpServlet {
 	 * @return
 	 * @throws SQLException
 	 */
-	private int getUID() throws SQLException {
+	private int getUID(Connection conn,JSONObject obj,HttpServletRequest req) throws SQLException {
 		String unique_id = req.getParameter("unique_id");
 		String sql1 = "SELECT uid FROM users" + " WHERE unique_id='"
 				+ unique_id + "'";
@@ -142,7 +127,7 @@ public class FriendsServlet extends HttpServlet {
 	 * @return
 	 * @throws SQLException
 	 */
-	private int getFriendUID() throws SQLException {
+	private int getFriendUID(Connection conn,JSONObject obj,HttpServletRequest req) throws SQLException {
 		String f_name = req.getParameter("name");
 		int uid2 = -1;
 		Statement stmt = conn.createStatement();
@@ -172,7 +157,7 @@ public class FriendsServlet extends HttpServlet {
 	 *            = friend user id
 	 * @throws SQLException
 	 */
-	private void addFriendRelationToDB(int uid1, int uid2) throws SQLException {
+	private void addFriendRelationToDB(Connection conn,JSONObject obj,int uid1, int uid2) throws SQLException {
 		String sql3 = "INSERT INTO friends (user_id,friend_id,createdAt,updatedAt) VALUES( ? , ? , ?, ?)";
 
 		PreparedStatement p_stmt = (PreparedStatement) conn
@@ -222,7 +207,7 @@ public class FriendsServlet extends HttpServlet {
 	 * @param uid2
 	 * @throws SQLException
 	 */
-	private void removeFriendRelationFromDB(int uid1, int uid2)
+	private void removeFriendRelationFromDB(Connection conn,JSONObject obj, int uid1, int uid2)
 			throws SQLException {
 		String sql_remove = "DELETE FROM friends WHERE user_id = '" + uid1
 				+ "' AND friend_id = '" + uid2 + "'";
@@ -239,7 +224,7 @@ public class FriendsServlet extends HttpServlet {
 	 * 
 	 * @throws SQLException
 	 */
-	private void parseFriends(int uid1) throws SQLException {
+	private void parseFriends(Connection conn,JSONObject obj, int uid1) throws SQLException {
 		Statement stmt_parse = conn.createStatement();
 
 		String sql_parse = "SELECT users.name, users.email FROM users INNER JOIN friends ON friends.friend_id = users.uid WHERE friends.user_id = '"

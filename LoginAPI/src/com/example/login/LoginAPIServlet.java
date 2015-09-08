@@ -11,12 +11,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 
-import com.google.appengine.api.utils.SystemProperty;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import com.mysql.jdbc.PreparedStatement;
@@ -57,18 +54,7 @@ import com.mysql.jdbc.PreparedStatement;
 public class LoginAPIServlet extends HttpServlet {
 
 	private static final String GOOGLE_J_DRIVER = "jdbc:google:mysql://login-1044:mysql-userdata/android_api?user=root";
-	// int v, requested pages.
-	private int v = 0;
-
-	// JSONObject Instance to record the outputs
-	private JSONObject obj;
-
-	// servlet request with parameters(post)
-	private HttpServletRequest req;
-
-	// db connection using jconnector driver
-	private Connection conn;
-
+	
 	public void doGet(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
 		PrintWriter out = resp.getWriter();
@@ -78,12 +64,10 @@ public class LoginAPIServlet extends HttpServlet {
 	public void doPost(HttpServletRequest req, HttpServletResponse resp)
 			throws ServletException, IOException {
 
-		v++;
 		PrintWriter out = resp.getWriter();
-
-		obj = new JSONObject();
+		JSONObject obj = new JSONObject();
+		Connection conn = null;
 		String url;
-		this.req = req;
 
 		// Setting up materials to connect the mysql db from Google app engine
 		// Must enable google-connector-j set true beforehand
@@ -99,7 +83,7 @@ public class LoginAPIServlet extends HttpServlet {
 		}
 
 		try {
-			Connection conn = DriverManager.getConnection(url);
+			conn = DriverManager.getConnection(url);
 		} catch (Exception e) {
 			e.printStackTrace();
 			obj.put("error", true);
@@ -112,10 +96,10 @@ public class LoginAPIServlet extends HttpServlet {
 			obj.put("tag", tag);
 			switch (tag) {
 			case "login":
-				loginFunction();
+				loginFunction(req,conn,obj);
 				break;
 			case "register":
-				registerFunction();
+				registerFunction(req,conn,obj);
 				break;
 			default:
 				obj.put("error", true);
@@ -131,9 +115,10 @@ public class LoginAPIServlet extends HttpServlet {
 			e2.printStackTrace();
 
 		}
+		out.println(obj);
 	}
 
-	private void loginFunction() throws SQLException, NoSuchAlgorithmException,
+	private void loginFunction(HttpServletRequest req, Connection conn, JSONObject obj) throws SQLException, NoSuchAlgorithmException,
 			InvalidKeySpecException {
 		String email = req.getParameter("email");
 		String password = req.getParameter("password");
@@ -166,7 +151,7 @@ public class LoginAPIServlet extends HttpServlet {
 		}
 	}
 
-	private void registerFunction() throws SQLException {
+	private void registerFunction(HttpServletRequest req, Connection conn, JSONObject obj) throws SQLException {
 		String name = req.getParameter("name");
 		String email = req.getParameter("email");
 		String password = req.getParameter("password");
